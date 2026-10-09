@@ -3368,6 +3368,67 @@ def test_docker_tag_with_compatible_api_version_rejects_tagged_base_image():
         docker_tag(config, base_image="langchain/langgraph-api:0.11.0")
 
 
+def test_docker_tag_with_compatible_api_version_rejects_tagged_base_image_with_registry_port():
+    config = validate_config(
+        {
+            "python_version": "3.11",
+            "dependencies": ["."],
+            "graphs": {"agent": "./agent.py:graph"},
+            "api_version": "~=0.11.0.dev5",
+        }
+    )
+
+    with pytest.raises(click.UsageError, match="tagged base_image"):
+        docker_tag(
+            config,
+            base_image="registry.example.com:5000/team/langgraph-api:0.11.0",
+        )
+
+
+def test_docker_tag_with_compatible_api_version_allows_untagged_base_image_with_registry_port():
+    config = validate_config(
+        {
+            "python_version": "3.11",
+            "dependencies": ["."],
+            "graphs": {"agent": "./agent.py:graph"},
+            "api_version": "~=0.11.0",
+        }
+    )
+
+    with patch(
+        "langgraph_cli.config._get_pypi_versions",
+        return_value=["0.11.0", "0.11.1"],
+    ):
+        tag = docker_tag(
+            config,
+            base_image="registry.example.com:5000/team/langgraph-api",
+        )
+
+    assert tag == "registry.example.com:5000/team/langgraph-api:0.11.1-py3.11"
+
+
+def test_docker_tag_with_compatible_api_version_allows_untagged_base_image_with_localhost_port():
+    config = validate_config(
+        {
+            "python_version": "3.11",
+            "dependencies": ["."],
+            "graphs": {"agent": "./agent.py:graph"},
+            "api_version": "~=0.11.0",
+        }
+    )
+
+    with patch(
+        "langgraph_cli.config._get_pypi_versions",
+        return_value=["0.11.0", "0.11.1"],
+    ):
+        tag = docker_tag(
+            config,
+            base_image="localhost:5000/langgraph-api",
+        )
+
+    assert tag == "localhost:5000/langgraph-api:0.11.1-py3.11"
+
+
 def test_config_to_docker_with_api_version():
     """Test config_to_docker function with api_version parameter."""
 

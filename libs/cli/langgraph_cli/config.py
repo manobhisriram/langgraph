@@ -282,7 +282,10 @@ def _is_compatible_api_version_candidate(
 
 
 def _ensure_compatible_api_version_base_image(base_image: str) -> None:
-    if ":" in base_image:
+    # A tag can only appear after the final "/" of the image reference; a
+    # ":" earlier than that is a registry host:port, not a tag.
+    last_segment = base_image.rsplit("/", 1)[-1]
+    if ":" in last_segment:
         raise click.UsageError(
             "Compatible api_version ranges cannot be used with a tagged base_image."
         )
